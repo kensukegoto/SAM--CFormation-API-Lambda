@@ -1,29 +1,32 @@
 const AWS = require('aws-sdk');
 const cloudformation = new AWS.CloudFormation();
 exports.lambdaHandler = async (event, context) => {
-  console.log("来る？");
+  console.log("start");
   var params = {
     StackName: 'lambda2s3', /* required */
+    Capabilities: [
+      "CAPABILITY_IAM","CAPABILITY_NAMED_IAM","CAPABILITY_AUTO_EXPAND"
+    ],
     Parameters: [
       {
-        ParameterKey: 'ParamMessage',
-        ParameterValue: 'Kensuke Goto The Great',
+        ParameterKey: 'FunctionName',
+        ParameterValue: 'repeat',
       },
       /* more items */
     ],
-    TemplateURL: 'https://kg-lambda2s3-1018.s3-ap-northeast-1.amazonaws.com/helle.template',
+    TemplateURL: 'https://kg-lambda2s3-1018.s3-ap-northeast-1.amazonaws.com/api-lambda-get.yaml',
   };
   await new Promise((reso,reje) => {
 
     cloudformation.createStack(params, function (err, data) {
-      console.log("実行されない？");
+      console.log("is it excuted ??");
       if (err) {
-        console.log("失敗");
+        console.log("fail !");
         console.log(err, err.stack); // an error occurred
-        reje("どんまい");
       }　else {
-        console.log(data,"成功"); // successful response
-        reso("オーキードーキー");
+        console.log("success !");
+        console.log(data,); // successful response
+        reso();
       }
 
     });
@@ -33,6 +36,6 @@ exports.lambdaHandler = async (event, context) => {
 
   
 
-  console.log("終了");
+  console.log("end");
 
 };

@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "API Gateway"
+Parameters:
+  FunctionName:
+    Type: String
+    Description: "Lambda Function Name (ex: hello-world)"
+Resources:
+  Function:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: !Sub "${FunctionName}"
+      Runtime: nodejs12.x
+      Handler: index.handler
+      Code:
+        S3Bucket: "kg-lambda2s3-1018"
+        S3Key: "repeat.zip"
+      MemorySize: 128
+      Timeout: 60
+      Role: !GetAtt LambdaExecutionRole.Arn
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+  Api:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: "api"
+  Resource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref Api
+      ParentId: !GetAtt Api.RootResourceId  
+      PathPart: "message"
+  Stage:
+    Type: AWS::ApiGateway::Stage
+    Properties: 
+      DeploymentId: !Ref Deployment
+      RestApiId: !Ref Api
+      StageName: Prod
+  Deployment: 
+    DependsOn: ResourceMethod
+    Type: AWS::ApiGateway::Deployment
+    Properties: 
+      RestApiId: !Ref Api
+      Description: "My deployment"
+  LambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Sub "${FunctionName}"
+      Action: "lambda:InvokeFunction"
+      Principal: "apigateway.amazonaws.com"
+    DependsOn: "Function"
+  ResourceMethod:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      RestApiId: !Ref Api
+      ResourceId: !Ref Resource
+      AuthorizationType: "None"
+      HttpMethod: "GET"
+      Integration:
+        Type: "AWS_PROXY"
+        IntegrationHttpMethod: "POST"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${FunctionName}/invocations"
+    DependsOn: "LambdaPermission"
